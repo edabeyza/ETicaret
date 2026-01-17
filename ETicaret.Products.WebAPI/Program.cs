@@ -1,5 +1,10 @@
+using Bogus;
 using ETicaret.Products.WebAPI.Context;
+using ETicaret.Products.WebAPI.Dtos;
+using ETicaret.Products.WebAPI.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using TS.Result;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,5 +16,62 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 var app = builder.Build();
 
 app.MapGet("/", () => "Hello World!");
+
+app.MapGet("/seedData", (ApplicationDbContext context) =>
+{
+    for (int i = 0; i < 100; i++)
+    {
+        Faker faker = new();
+
+        Product product = new()
+        {
+            Name = faker.Commerce.ProductName(),
+            Price = Convert.ToDecimal(faker.Commerce.Price()),
+            Stock = faker.Commerce.Random.Int(1, 100)
+        };
+
+        context.Products.Add(product);
+    }
+
+    context.SaveChanges();
+
+    return Results.Ok(Result<string>.Succeed("Seed data baþarýyla çalýþtýrýldý ve ürünler oluþturuldu"));
+});
+
+app.MapGet("/getall", async (ApplicationDbContext context, CancellationToken cancellationToken) =>
+{
+    var products = await context.Products.OrderBy(p => p.Name).ToListAsync(cancellationToken);
+    Result<List<Product>> response = products;
+    return response;
+});
+
+app.MapPost("/create", async (CreateProductDto request, ApplicationDbContext context, CancellationToken cancellationToken) =>
+{
+    bool isNameExists = await context.Products.AnyAsync(p => p.Name == request.Name, cancellationToken);
+
+    if (isNameExists)
+    {
+        var response = Result<string>.Failure("Ürün adý daha önce oluþturulmuþ");
+        return Results.BadRequest(response);
+    }
+
+    Product product = new()
+    {
+        Name = request.Name,
+        Price = request.Price,
+        Stock = request.Stock,
+    };
+
+    await context.AddAsync(product, cancellationToken);
+    await context.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(Result<string>.Succeed("Ürün kaydý baþarýyla oluþturuldu"));
+});
+using (var scoped = app.Services.CreateScope())
+{
+    var srv = scoped.ServiceProvider;
+    var context = srv.GetRequiredService<ApplicationDbContext>();
+    context.Database.Migrate();
+}
 
 app.Run();
