@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ETicaret.Products.WebAPI.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ETicaret.Products.WebAPI.Context
 {
@@ -6,6 +7,14 @@ namespace ETicaret.Products.WebAPI.Context
     {
         public ApplicationDbContext(DbContextOptions options) : base(options)
         {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Product>(builder =>
+            {
+                builder.Property(p => p.Price).HasColumnType("money");
+            });
         }
     }
 }

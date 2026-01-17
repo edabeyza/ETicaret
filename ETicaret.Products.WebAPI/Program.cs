@@ -7,6 +7,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer"));
 });
+
 var app = builder.Build();
 
 app.MapGet("/", () => "Hello World!");
