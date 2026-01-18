@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ETicaret.ShoppingCarts.WebAPI.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ETicaret.ShoppingCarts.WebAPI.Context
 {
@@ -7,5 +8,7 @@ namespace ETicaret.ShoppingCarts.WebAPI.Context
         public ApplicationDbContext(DbContextOptions options) : base(options)
         {
         }
+
+        public DbSet<ShoppingCart> ShoppingCarts { get; set; }
     }
 }
