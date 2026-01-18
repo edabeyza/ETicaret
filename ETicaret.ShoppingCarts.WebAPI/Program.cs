@@ -2,6 +2,8 @@ using ETicaret.ShoppingCarts.WebAPI.Context;
 using ETicaret.ShoppingCarts.WebAPI.Dtos;
 using ETicaret.ShoppingCarts.WebAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +59,52 @@ app.MapPost("/create", async (CreateShoppingCartDto request, ApplicationDbContex
     return Results.Ok(new Result<string>("Ürün sepete baþarýyla eklendi"));
 });
 
+app.MapGet("/createOrder", async (ApplicationDbContext context, IConfiguration configuration, CancellationToken cancellationToken) =>
+{
+    List<ShoppingCart> shoppingCarts = await context.ShoppingCarts.ToListAsync(cancellationToken);
+    HttpClient client = new HttpClient();
+
+    string productsEnpoint = $"http://{configuration.GetSection("HttpRequest:Products").Value}/getall";
+    var message = await client.GetAsync(productsEnpoint);
+
+    Result<List<ProductDto>>? products = new();
+
+    if (message.IsSuccessStatusCode)
+    {
+        products = await message.Content.ReadFromJsonAsync<Result<List<ProductDto>>>();
+    }
+
+    List<CreateOrderDto> response = shoppingCarts.Select(s => new CreateOrderDto
+    {
+        ProductId = s.ProductId,
+        Quantity = s.Quantity,
+        Price = products!.Data!.First(p => p.Id == s.ProductId).Price
+    }).ToList();
+
+    string ordersEnpoint = $"http://{configuration.GetSection("HttpRequest:Orders").Value}/create";
+
+    string stringJson = JsonSerializer.Serialize(response);
+    var content = new StringContent(stringJson, Encoding.UTF8, "application/json");
+
+    var orderMessage = await client.PostAsync(ordersEnpoint, content);
+
+    if (orderMessage.IsSuccessStatusCode)
+    {
+        List<ChangeProductStockDto> changeProductStockDtos = shoppingCarts.Select(s => new ChangeProductStockDto(s.ProductId, s.Quantity)).ToList();
+
+        productsEnpoint = $"http://{configuration.GetSection("HttpRequest:Products").Value}/change-product-stock";
+
+        string prodctsStringJson = JsonSerializer.Serialize(changeProductStockDtos);
+        var productsContent = new StringContent(prodctsStringJson, Encoding.UTF8, "application/json");
+
+        await client.PostAsync(productsEnpoint, productsContent);
+
+        context.RemoveRange(shoppingCarts);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    return Results.Ok(new Result<string>("Sipariþ baþarýyla oluþturuldu"));
+});
 using (var scoped = app.Services.CreateScope())
 {
     var srv = scoped.ServiceProvider;
