@@ -2,7 +2,6 @@ using ETicaret.ShoppingCarts.WebAPI.Context;
 using ETicaret.ShoppingCarts.WebAPI.Dtos;
 using ETicaret.ShoppingCarts.WebAPI.Models;
 using Microsoft.EntityFrameworkCore;
-using TS.Result;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,8 +19,8 @@ app.MapGet("/getall", async (ApplicationDbContext context, IConfiguration config
     List<ShoppingCart> shoppingCarts = await context.ShoppingCarts.ToListAsync(cancellationToken);
     HttpClient client = new HttpClient();
 
-    string productsEnpoint = $"http://{configuration.GetSection("HttpRequest:Products").Value}/getall";
-    var message = await client.GetAsync(productsEnpoint);
+    string productsEndpoint = $"http://{configuration.GetSection("HttpRequest:Products").Value}/getall";
+    var message = await client.GetAsync(productsEndpoint);
 
     Result<List<ProductDto>>? products = new();
 
