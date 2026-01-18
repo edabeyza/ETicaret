@@ -2,6 +2,7 @@ using ETicaret.Orders.WebAPI.Context;
 using ETicaret.Orders.WebAPI.Dtos;
 using ETicaret.Orders.WebAPI.Models;
 using ETicaret.Orders.WebAPI.Options;
+using System.Net.Http.Json;
 using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -70,6 +71,28 @@ app.MapPost("/create", async (MongoDbContext context, List<CreateOrderDto> reque
     }
 
     await items.InsertManyAsync(orders);
+
+    using var httpClient = new HttpClient();
+
+    foreach (var order in orders)
+    {
+        var decreaseBody = new
+        {
+            productId = order.ProductId,
+            quantity = order.Quantity
+        };
+
+        await httpClient.PostAsJsonAsync("http://inventory:8080/decrease", decreaseBody);
+    }
+
+    var notificationBody = new
+    {
+        message = "Yeni sipariþ oluþturuldu.",
+        type = "Order"
+    };
+
+    await httpClient.PostAsJsonAsync("http://notifications:8080/create", notificationBody);
+
 
     return Results.Ok(new Result<string>("Sipariþ baþarýyla oluþturuldu"));
 });
