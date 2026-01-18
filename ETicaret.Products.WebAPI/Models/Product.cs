@@ -1,15 +1,12 @@
-﻿namespace ETicaret.Products.WebAPI.Models
+﻿namespace ETicaret.Products.WebAPI.Models;
+public sealed class Product
 {
-    public class Product
+    public Product()
     {
-        public Product() 
-        {
-            Id = Guid.NewGuid();
-        }
-        public Guid Id { get; set; }
-        public string Name { get; set; } = default!;
-        public decimal Price { get; set; }
-        public int Stock { get; set; }
-
+        Id = Guid.NewGuid();
     }
+    public Guid Id { get; set; }
+    public string Name { get; set; } = default!;
+    public decimal Price { get; set; }
+    public int Stock { get; set; }
 }
