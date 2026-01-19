@@ -1,5 +1,6 @@
 using ETicaret.Gateway.YARP.Context;
 using ETicaret.Gateway.YARP.Dtos;
+using ETicaret.Gateway.YARP.Models;
 using ETicaret.Identity.Context;
 using ETicaret.Identity.Dtos;
 using ETicaret.Identity.Models;
