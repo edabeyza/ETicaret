@@ -1,5 +1,6 @@
 using ETicaret.Inventory.WebAPI.Dtos;
 using ETicaret.Inventory.WebAPI.Models;
+using System.Net.Http.Json;
 using TS.Result;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,7 +43,7 @@ app.MapPost("/create", (CreateInventoryDto request) =>
     return Results.Ok(new Result<string>("Stok baþarýyla kaydedildi"));
 });
 
-app.MapPost("/decrease", (DecreaseInventoryDto request) =>
+app.MapPost("/decrease", async (DecreaseInventoryDto request) => 
 {
     var stock = stocks.FirstOrDefault(s => s.ProductId == request.ProductId);
 
@@ -57,6 +58,21 @@ app.MapPost("/decrease", (DecreaseInventoryDto request) =>
     }
 
     stock.Quantity -= request.Quantity;
+
+    using var httpClient = new HttpClient();
+
+    var body = new[]
+    {
+        new
+        {
+            productId = request.ProductId,
+            quantity = request.Quantity
+        }
+    };
+
+    await httpClient.PostAsJsonAsync(
+        "http://products:8080/change-product-stock",
+        body);
 
     return Results.Ok(new Result<string>("Stok güncellendi"));
 });
